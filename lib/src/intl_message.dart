@@ -257,6 +257,84 @@ abstract class Message {
         : "${classDeclaration.name.token}_$outerName";
   }
 
+  static Map<String, dynamic>? metadata(MethodInvocation node) {
+    dynamic evaluateValue(String key, Expression value) {
+      void raise() {
+        throw Exception("metadata value for key \"$key\" must be String,int,bool,double,List or Map");
+      }
+
+      if (value is IntegerLiteral) {
+        return value.value;
+      } else if (value is SimpleStringLiteral) {
+        return value.value;
+      } else if (value is DoubleLiteral) {
+        return value.value;
+      } else if (value is BooleanLiteral) {
+        return value.value;
+      } else if (value is ListLiteral) {
+        final list = <dynamic>[];
+        for (var e in value.elements) {
+          if (e is! Literal) {
+            raise();
+            return;
+          }
+          list.add(evaluateValue(key, e));
+        }
+      } else if (value is SetOrMapLiteral) {
+        final map = <String, dynamic>{};
+        for (var e in value.elements) {
+          if (e is MapLiteralEntry) {
+            final k = evaluateValue(key, e.key);
+            if (k is! String) {
+              raise();
+            }
+            final v = evaluateValue(key, e.value);
+            map[k] = v;
+          } else {
+            raise();
+          }
+        }
+        return map;
+      } else {
+        raise();
+      }
+    }
+
+    FunctionDeclaration? functionDeclarationNode(dynamic n) {
+      if (n == null) return null;
+      if (n is FunctionDeclaration) return n;
+      return functionDeclarationNode(n.parent);
+    }
+
+    var functionDeclaration = functionDeclarationNode(node);
+
+    if (functionDeclaration == null) {
+      return null;
+    }
+
+    final annotations = functionDeclaration.metadata;
+    if (annotations.isEmpty) {
+      return null;
+    }
+    if (annotations.length > 1) {
+      throw Exception("Unsupported annotations. only one MapView with literals can be used");
+    }
+    final annotation = annotations.first;
+    final name = annotation.name.name;
+    if (name != "MapView") {
+      throw Exception("Unsupported annotations. only one MapView with literals can be used");
+    }
+    final arg = annotation.arguments?.arguments.first;
+    if (arg is! Literal) {
+      throw Exception("Unsupported annotation. only MapView with literals can be used");
+    }
+    final v = evaluateValue("map", arg);
+    if (v is Map<String, dynamic> && v.isNotEmpty) {
+      return v;
+    }
+    return null;
+  }
+
   /// Turn a value, typically read from a translation file or created out of an
   /// AST for a source program, into the appropriate
   /// subclass. We expect to get literal Strings, variable substitutions
@@ -484,6 +562,9 @@ class MainMessage extends ComplexMessage {
 
   /// The locale argument from the Intl.message call
   String? locale;
+
+  /// metadata about the message
+  Map<String, dynamic>? metadata;
 
   /// Whether extraction skip outputting this message.
   ///

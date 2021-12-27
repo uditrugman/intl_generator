@@ -319,6 +319,13 @@ class MessageFindingVisitor extends GeneralizingAstVisitor {
       } else {
         message = messageFromDirectPluralOrGenderCall(node);
       }
+      if (message != null) {
+        try {
+          message.metadata = Message.metadata(node);
+        } catch (e) {
+          return "$e";
+        }
+      }
     } catch (e, s) {
       return "Unexpected exception: $e, $s";
     }

@@ -41,7 +41,20 @@ Map arbMetadata(MainMessage message) {
   if (desc != null) {
     out["description"] = desc;
   }
-  out["type"] = "text";
+  final metadata = message.metadata;
+  if (metadata != null) {
+    out["metadata"] = metadata;
+    final type = metadata["type"];
+    if (type != null && type != "text") {
+      out["type"] = type;
+    }
+  }
+  var meaning = message.meaning;
+  if (meaning != null) {
+    out["meaning"] = meaning;
+  }
+  out.putIfAbsent("type", () => "text");
+  // out["type"] = "text";
   var placeholders = {};
   var placeholderNames = [];
   for (var arg in message.arguments) {
