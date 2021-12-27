@@ -300,23 +300,32 @@ abstract class Message {
       }
     }
 
-    FunctionDeclaration? functionDeclarationNode(dynamic n) {
+    NodeList<Annotation>? findAnnotations(dynamic n) {
       if (n == null) return null;
-      if (n is FunctionDeclaration) return n;
-      return functionDeclarationNode(n.parent);
+      if (n is FunctionDeclaration) return n.metadata;
+      if (n is MethodDeclaration) return n.metadata;
+      return findAnnotations(n.parent);
     }
 
-    var functionDeclaration = functionDeclarationNode(node);
+    // FunctionDeclaration? functionDeclarationNode(dynamic n) {
+    //   if (n == null) return null;
+    //   if (n is FunctionDeclaration) return n;
+    //   return functionDeclarationNode(n.parent);
+    // }
+    //
+    // var functionDeclaration = functionDeclarationNode(node);
+    //
+    // if (functionDeclaration == null) {
+    //   return null;
+    // }
 
-    if (functionDeclaration == null) {
+    final annotations = findAnnotations(node);
+
+    // final annotations = functionDeclaration.metadata;
+    if (annotations?.isEmpty ?? true) {
       return null;
     }
-
-    final annotations = functionDeclaration.metadata;
-    if (annotations.isEmpty) {
-      return null;
-    }
-    if (annotations.length > 1) {
+    if (annotations!.length > 1) {
       throw Exception("Unsupported annotations. only one MapView with literals can be used");
     }
     final annotation = annotations.first;

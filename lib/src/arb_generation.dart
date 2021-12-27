@@ -43,10 +43,13 @@ Map arbMetadata(MainMessage message) {
   }
   final metadata = message.metadata;
   if (metadata != null) {
-    out["metadata"] = metadata;
     final type = metadata["type"];
     if (type != null && type != "text") {
       out["type"] = type;
+      metadata.remove("type");
+    }
+    if (metadata.isNotEmpty) {
+      out["metadata"] = metadata;
     }
   }
   var meaning = message.meaning;
